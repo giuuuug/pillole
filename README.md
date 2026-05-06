@@ -1,9 +1,15 @@
 <p align="center">
+  <!-- Selettore Lingua -->
   <a href="#pillole-ita">
     <img src="https://img.shields.io/badge/lang-ITA-green?style=for-the-badge" />
   </a>
   <a href="#pillole-eng">
     <img src="https://img.shields.io/badge/lang-ENG-blue?style=for-the-badge" />
+  </a>
+  <br />
+  <!-- Status di Deployment -->
+  <a href="https://app.netlify.com/projects/pillole/deploys">
+    <img src="https://api.netlify.com/api/v1/badges/42c89657-df8c-4eff-9b46-d81b94a387da/deploy-status" alt="Netlify Status" />
   </a>
 </p>
 
