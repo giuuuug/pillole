@@ -1,0 +1,8 @@
+# 1.0.0 (2026-05-06)
+
+
+### Bug Fixes
+
+* .gitignore and readme ([5fe2bec](https://github.com/giuuuug/pillole/commit/5fe2bec687ffa176bed2d95cb3222a7bc281d1d2))
+* .gitignore and readme ([1fb6123](https://github.com/giuuuug/pillole/commit/1fb6123db1dc72c00ee37427fae05f3b016c503c))
+* github action review ([b554a98](https://github.com/giuuuug/pillole/commit/b554a982f8c83a08a9bde36a1b5dd44bef2f1321))
