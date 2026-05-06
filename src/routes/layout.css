@@ -45,6 +45,7 @@
 	html {
 		min-height: 100%;
 		background: var(--color-paper);
+		touch-action: pan-x pan-y;
 	}
 
 	body {
