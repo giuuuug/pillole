@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/giuuuug/pillole/compare/v1.0.2...v1.0.3) (2026-05-06)
+
+
+### Bug Fixes
+
+* app scroll for android ([33265fd](https://github.com/giuuuug/pillole/commit/33265fd6295801fd0673167c4bac688ad89027ab))
+
 ## [1.0.2](https://github.com/giuuuug/pillole/compare/v1.0.1...v1.0.2) (2026-05-06)
 
 
