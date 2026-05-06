@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/giuuuug/pillole/compare/v1.0.0...v1.0.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* pills are now loaded before ([f3f42d4](https://github.com/giuuuug/pillole/commit/f3f42d4f84b514ef038f394837f54c451dc497d1))
+
 # 1.0.0 (2026-05-06)
 
 
