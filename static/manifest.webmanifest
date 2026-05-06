@@ -1,0 +1,26 @@
+{
+	"name": "Pillole - di conoscienza",
+	"short_name": "Pillole",
+	"description": "Il tuo bagaglio di conoscenza, in pillole.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#F5F1E8",
+	"theme_color": "#F5F1E8",
+	"lang": "it",
+	"icons": [
+		{
+			"src": "/icon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "maskable"
+		}
+	]
+}

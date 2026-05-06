@@ -1,0 +1,205 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@import 'katex/dist/katex.min.css';
+
+@theme {
+	--font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+	--font-sans:
+		-apple-system, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+
+	/* Light (paper) palette */
+	--color-paper: #f5f1e8;
+	--color-paper-card: #fffcf4;
+	--color-ink: #1a1f2e;
+	--color-ink-muted: rgba(26, 31, 46, 0.55);
+	--color-ink-subtle: rgba(26, 31, 46, 0.4);
+	--color-ink-border: rgba(26, 31, 46, 0.08);
+	--color-accent: #b8853e;
+
+	/* Dark palette */
+	--color-night: #15171f;
+	--color-night-card: #1e2029;
+	--color-night-ink: #ede6d3;
+	--color-night-muted: rgba(237, 230, 211, 0.55);
+	--color-night-subtle: rgba(237, 230, 211, 0.4);
+	--color-night-border: rgba(237, 230, 211, 0.08);
+}
+
+@layer base {
+	* {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	html,
+	body {
+		margin: 0;
+		background: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	html {
+		min-height: 100%;
+		background: var(--color-paper);
+	}
+
+	body {
+		min-height: 100dvh;
+		overflow-x: hidden;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-y: contain;
+	}
+
+	button {
+		font-family: inherit;
+	}
+
+	input::placeholder,
+	textarea::placeholder {
+		color: var(--color-ink-subtle);
+		font-style: italic;
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in srgb, var(--color-ink) 45%, transparent)
+			color-mix(in srgb, var(--color-paper) 60%, transparent);
+	}
+
+	*::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	*::-webkit-scrollbar-track {
+		background: color-mix(in srgb, var(--color-paper) 60%, transparent);
+	}
+
+	*::-webkit-scrollbar-thumb {
+		background: color-mix(in srgb, var(--color-ink) 45%, transparent);
+		border-radius: 9999px;
+		border: 2px solid transparent;
+		background-clip: padding-box;
+	}
+}
+
+@layer components {
+	/* Editorial typography helpers — used across screens */
+	.eyebrow {
+		font-size: 11px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-ink-muted);
+		font-weight: 500;
+	}
+
+	.eyebrow-strong {
+		font-size: 11px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-ink-muted);
+		font-weight: 600;
+	}
+
+	.serif {
+		font-family: var(--font-serif);
+	}
+
+	.serif-italic {
+		font-family: var(--font-serif);
+		font-style: italic;
+	}
+
+	.headline {
+		font-family: var(--font-serif);
+		font-style: italic;
+		font-weight: 400;
+		font-size: clamp(2rem, 8vw, 2.625rem);
+		line-height: 1;
+		letter-spacing: -0.02em;
+		color: var(--color-ink);
+	}
+
+	.divider {
+		height: 1px;
+		background: var(--color-ink-border);
+	}
+
+	.card-paper {
+		background: var(--color-paper-card);
+		border: 1px solid var(--color-ink-border);
+		border-radius: 4px;
+		box-shadow:
+			0 1px 0 rgba(26, 31, 46, 0.04),
+			0 8px 28px rgba(26, 31, 46, 0.06);
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		padding: 6px 12px;
+		border-radius: 9999px;
+		border: 1px solid var(--color-ink-border);
+		background: transparent;
+		color: var(--color-ink);
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.chip[aria-pressed='true'] {
+		border-color: var(--color-accent);
+		background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+		color: var(--color-accent);
+	}
+
+	.btn-accent {
+		background: var(--color-accent);
+		color: #fff;
+		border: none;
+		padding: 10px 16px;
+		border-radius: 9999px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		cursor: pointer;
+	}
+
+	.btn-accent:disabled {
+		background: transparent;
+		color: var(--color-ink-subtle);
+		border: 1px solid var(--color-ink-border);
+		cursor: not-allowed;
+	}
+}
+
+/* App-shell mobile-first container — caps width on tablet+ for a clean look */
+.app-shell {
+	max-width: 640px;
+	margin: 0 auto;
+	min-height: 100dvh;
+	background: var(--color-paper);
+	padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Desktop wraps app-shell with the same paper bg so no contrasting bands appear */
+@media (min-width: 641px) {
+	html,
+	body {
+		background: var(--color-paper);
+	}
+	
+}
+
+/* KaTeX overrides — block formula scrolls horizontally on mobile */
+.katex-display {
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding: 4px 0;
+}
