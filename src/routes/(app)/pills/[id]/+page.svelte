@@ -369,14 +369,25 @@
 
 	.menu {
 		position: absolute;
-		top: calc(100% + 6px);
+		top: calc(100% + 8px);
 		right: 0;
 		min-width: 160px;
-		padding: 6px;
+		padding: 4px;
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
 		z-index: 20;
+		animation: menu-in 0.12s ease-out;
+	}
+
+	@keyframes menu-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px) scale(0.97);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
 	}
 
 	.menu-form {
@@ -389,20 +400,25 @@
 		text-align: left;
 		background: transparent;
 		border: none;
-		padding: 10px 12px;
-		border-radius: 4px;
+		padding: 10px 14px;
+		border-radius: 3px;
 		font-size: 14px;
 		color: var(--color-ink);
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-serif);
+		font-style: italic;
+		letter-spacing: 0.01em;
+		transition: background 0.1s ease;
 	}
 
 	.menu-item:hover {
-		background: var(--color-ink-border);
+		background: color-mix(in srgb, var(--color-ink) 6%, transparent);
 	}
 
 	.menu-item.danger {
 		color: #b85c5c;
+		border-top: 1px solid var(--color-ink-border);
+		margin-top: 2px;
 	}
 
 	.share-toast {

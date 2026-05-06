@@ -132,8 +132,8 @@
 {:else}
 	<form onsubmit={save} class="composer">
 		<header class="topbar">
-			<button type="button" class="close" onclick={close} aria-label="Chiudi">
-				<Icon name="close" size={22} />
+			<button type="button" class="close" onclick={step === 2 ? () => (step = 1) : close} aria-label={step === 2 ? 'Indietro' : 'Chiudi'}>
+				<Icon name={step === 2 ? 'back' : 'close'} size={22} />
 			</button>
 			<div class="step-label eyebrow-strong">Nuova pillola · {step}/2</div>
 			{#if step === 1}

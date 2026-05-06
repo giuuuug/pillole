@@ -178,6 +178,9 @@
 
 	.editor-host {
 		touch-action: pan-y;
+		max-height: 320px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 
 	.editor-host.hidden {
@@ -257,6 +260,9 @@
 
 	.preview-inline {
 		min-height: 220px;
+		max-height: 320px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 
 	.preview :global(.preview-body) {

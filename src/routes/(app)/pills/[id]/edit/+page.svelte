@@ -8,31 +8,19 @@
 
 	let { data } = $props();
 
-	let title = $state('');
-	let body = $state('');
-	let categoryId = $state<string | null>(null);
-	let source = $state('');
-	let sourceUrl = $state('');
+	let title = $state(data.pill.title);
+	let body = $state(data.pill.body);
+	let categoryId = $state<string | null>(data.pill.category?.id ?? null);
+	let source = $state(data.pill.source ?? '');
+	let sourceUrl = $state(data.pill.sourceUrl ?? '');
 
 	let showNewCat = $state(false);
 	let newCatName = $state('');
-	let newCatColor = $state<string>('#7B6FA8');
+	let newCatColor = $state(data.palette[0] ?? '#7B6FA8');
 	let creatingCat = $state(false);
 	let catError = $state('');
 
-	let categories = $state<Category[]>([]);
-	let initialized = $state(false);
-	$effect(() => {
-		if (initialized) return;
-		title = data.pill.title;
-		body = data.pill.body;
-		categoryId = data.pill.category?.id ?? null;
-		source = data.pill.source ?? '';
-		sourceUrl = data.pill.sourceUrl ?? '';
-		newCatColor = data.palette[0] ?? '#7B6FA8';
-		categories = [...data.categories];
-		initialized = true;
-	});
+	let categories = $state<Category[]>([...data.categories]);
 
 	let saving = $state(false);
 	let saveError = $state('');
@@ -91,7 +79,7 @@
 			const result = deserialize(await res.text());
 			if (result.type === 'redirect') {
 				await invalidateAll();
-				await goto(result.location);
+				await goto(result.location, { replaceState: true });
 				return;
 			}
 			if (result.type === 'failure') {
@@ -100,7 +88,7 @@
 			}
 			if (result.type === 'success') {
 				await invalidateAll();
-				await goto(`/pills/${data.pill.id}`);
+				await goto(`/pills/${data.pill.id}`, { replaceState: true });
 			}
 		} catch {
 			saveError = 'Errore di rete.';
