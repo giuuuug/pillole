@@ -11,6 +11,15 @@ export class PillServiceError extends Error {
 	}
 }
 
+function isSafeUrl(url: string): boolean {
+	try {
+		const { protocol } = new URL(url);
+		return protocol === 'https:' || protocol === 'http:';
+	} catch {
+		return false;
+	}
+}
+
 function validate(input: PillInput) {
 	const title = input.title.trim();
 	const body = input.body.trim();
@@ -19,6 +28,8 @@ function validate(input: PillInput) {
 	if (title.length > 200)
 		throw new PillServiceError('INVALID', 'Il titolo è troppo lungo (max 200).');
 	if (body.length === 0) throw new PillServiceError('INVALID', 'Il corpo non può essere vuoto.');
+	if (input.sourceUrl && !isSafeUrl(input.sourceUrl))
+		throw new PillServiceError('INVALID', 'URL della fonte non valido.');
 	return { title, body };
 }
 
@@ -73,7 +84,11 @@ export const pillService = {
 			set.categoryId = patch.categoryId;
 		}
 		if (patch.source !== undefined) set.source = patch.source?.trim() || null;
-		if (patch.sourceUrl !== undefined) set.sourceUrl = patch.sourceUrl?.trim() || null;
+		if (patch.sourceUrl !== undefined) {
+			const url = patch.sourceUrl?.trim() || null;
+			if (url && !isSafeUrl(url)) throw new PillServiceError('INVALID', 'URL della fonte non valido.');
+			set.sourceUrl = url;
+		}
 		if (patch.favorite !== undefined) set.favorite = patch.favorite;
 
 		const row = await pillRepository.update(userId, id, set);

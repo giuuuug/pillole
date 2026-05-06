@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth-client';
 	import Icon from '$lib/components/Icon.svelte';
@@ -33,8 +32,9 @@
 				error = getErrorMessage(result.error);
 				return;
 			}
-			const next = page.url.searchParams.get('next') ?? '/';
-			await goto(next);
+			const raw = page.url.searchParams.get('next') ?? '/';
+			const next = /^\/[^/]/.test(raw) ? raw : '/';
+			window.location.href = next;
 		} catch (err) {
 			error = getErrorMessage(err);
 		} finally {
