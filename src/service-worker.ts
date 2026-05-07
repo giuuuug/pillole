@@ -18,6 +18,10 @@ sw.addEventListener('install', (event) => {
 sw.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
+			// Start navigation preloads in parallel with SW startup on next navigations.
+			if ('navigationPreload' in sw.registration) {
+				await sw.registration.navigationPreload.enable();
+			}
 			for (const key of await caches.keys()) {
 				if (key !== CACHE) await caches.delete(key);
 			}
@@ -47,15 +51,33 @@ sw.addEventListener('fetch', (event) => {
 			(async () => {
 				const cache = await caches.open(CACHE);
 				const cached = await cache.match(req);
-				// Fetch in background and refresh cache regardless.
-				const networkPromise = fetch(req)
-					.then((res) => {
-						if (res.ok) cache.put(req, res.clone());
-						return res;
-					})
-					.catch(() => null);
-				// Serve stale immediately if available; otherwise wait for network.
-				return cached ?? (await networkPromise) ?? new Response('offline', { status: 503 });
+
+				if (cached) {
+					// Serve stale immediately; refresh cache in background.
+					event.waitUntil(
+						fetch(req)
+							.then((res) => { if (res.ok) cache.put(req, res.clone()); })
+							.catch(() => {})
+					);
+					return cached;
+				}
+
+				// No cache hit: use the preload response that the browser started
+				// fetching in parallel with SW startup, eliminating the startup delay.
+				const preload = await event.preloadResponse;
+				if (preload) {
+					if (preload.ok) cache.put(req, preload.clone());
+					return preload;
+				}
+
+				// Fallback to network.
+				try {
+					const res = await fetch(req);
+					if (res.ok) cache.put(req, res.clone());
+					return res;
+				} catch {
+					return new Response('offline', { status: 503 });
+				}
 			})()
 		);
 		return;

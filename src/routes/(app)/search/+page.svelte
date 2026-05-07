@@ -15,6 +15,7 @@
 	let total = $state(0);
 	let searching = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
+	let prevQuery = '';
 
 	async function doSearch() {
 		const params = new URLSearchParams();
@@ -38,15 +39,15 @@
 	}
 
 	$effect(() => {
-		// Track reactive dependencies.
 		const _q = query;
 		const _c = activeCat;
 		const _p = period;
 
 		clearTimeout(debounceTimer);
-		// Immediate search on filter/period change; debounce on text input.
-		const delay = _q !== query ? 0 : 300;
-		debounceTimer = setTimeout(doSearch, delay);
+		// Debounce text input; fire immediately on filter/period change.
+		const isTextChange = _q !== prevQuery;
+		prevQuery = _q;
+		debounceTimer = setTimeout(doSearch, isTextChange ? 300 : 0);
 		return () => clearTimeout(debounceTimer);
 	});
 

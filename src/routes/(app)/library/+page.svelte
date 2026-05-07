@@ -78,19 +78,10 @@
 		}
 		loadingGrouped = true;
 		try {
-			// Load all pages to build the full grouped view.
-			let page = 1;
-			let more = true;
-			const all: PillSummary[] = [];
-			while (more) {
-				const res = await fetch(`/api/pills?page=${page}&pageSize=100`);
-				if (!res.ok) break;
-				const batch = await res.json();
-				all.push(...batch.items);
-				more = batch.hasMore;
-				page += 1;
-			}
-			groupedPills = all;
+			const res = await fetch('/api/pills/all');
+			if (!res.ok) return;
+			const json = await res.json();
+			groupedPills = json.items;
 			groupedLoaded = true;
 		} finally {
 			loadingGrouped = false;

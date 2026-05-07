@@ -123,7 +123,8 @@ export const pill = pgTable(
 	(table) => [
 		index('pill_userId_idx').on(table.userId),
 		index('pill_categoryId_idx').on(table.categoryId),
-		uniqueIndex('pill_userId_number_uq').on(table.userId, table.number)
+		uniqueIndex('pill_userId_number_uq').on(table.userId, table.number),
+		index('pill_userId_createdAt_idx').on(table.userId, table.createdAt)
 	]
 );
 
