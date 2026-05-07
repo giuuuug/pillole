@@ -1,8 +1,15 @@
-import { and, desc, eq, max, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ilike, max, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '$lib/server/db';
 import { category, pill } from '$lib/server/db/schema';
-import type { Pill, PillInput, PillUpdate, PillWithCategory } from '$lib/domain/pill';
+import type {
+	Pill,
+	PillInput,
+	PillSearchFilters,
+	PillSummary,
+	PillUpdate,
+	PillWithCategory
+} from '$lib/domain/pill';
 
 type PillRow = typeof pill.$inferSelect;
 
@@ -37,6 +44,54 @@ function toDomainJoined(row: JoinedRow): PillWithCategory {
 	};
 }
 
+type SummaryRow = {
+	pill: Omit<PillRow, 'body'>;
+	category: typeof category.$inferSelect | null;
+};
+
+function toDomainSummary(row: SummaryRow): PillSummary {
+	return {
+		id: row.pill.id,
+		userId: row.pill.userId,
+		categoryId: row.pill.categoryId,
+		number: row.pill.number,
+		title: row.pill.title,
+		excerpt: row.pill.excerpt,
+		source: row.pill.source,
+		sourceUrl: row.pill.sourceUrl,
+		favorite: row.pill.favorite,
+		createdAt: row.pill.createdAt,
+		updatedAt: row.pill.updatedAt,
+		category: row.category
+			? { id: row.category.id, name: row.category.name, color: row.category.color }
+			: null
+	};
+}
+
+const summaryColumns = {
+	pill: {
+		id: pill.id,
+		userId: pill.userId,
+		categoryId: pill.categoryId,
+		number: pill.number,
+		title: pill.title,
+		excerpt: pill.excerpt,
+		source: pill.source,
+		sourceUrl: pill.sourceUrl,
+		favorite: pill.favorite,
+		createdAt: pill.createdAt,
+		updatedAt: pill.updatedAt
+	},
+	category
+} as const;
+
+function periodCutoff(period: 'week' | 'month'): Date {
+	const d = new Date();
+	if (period === 'week') d.setDate(d.getDate() - 7);
+	else d.setMonth(d.getMonth() - 1);
+	return d;
+}
+
 export const pillRepository = {
 	async listByUser(userId: string): Promise<PillWithCategory[]> {
 		const rows = await db
@@ -56,6 +111,108 @@ export const pillRepository = {
 			.where(and(eq(pill.userId, userId), eq(pill.id, id)))
 			.limit(1);
 		return row ? toDomainJoined(row) : null;
+	},
+
+	async count(userId: string): Promise<number> {
+		const [row] = await db
+			.select({ value: count() })
+			.from(pill)
+			.where(eq(pill.userId, userId));
+		return row?.value ?? 0;
+	},
+
+	// Fetches a single pill at positional offset (DESC createdAt) — used for daily pill.
+	async findByOffset(userId: string, offset: number): Promise<PillWithCategory | null> {
+		const [row] = await db
+			.select({ pill, category })
+			.from(pill)
+			.leftJoin(category, eq(pill.categoryId, category.id))
+			.where(eq(pill.userId, userId))
+			.orderBy(desc(pill.createdAt))
+			.limit(1)
+			.offset(offset);
+		return row ? toDomainJoined(row) : null;
+	},
+
+	async listAllSummary(userId: string): Promise<PillSummary[]> {
+		const rows = await db
+			.select(summaryColumns)
+			.from(pill)
+			.leftJoin(category, eq(pill.categoryId, category.id))
+			.where(eq(pill.userId, userId))
+			.orderBy(desc(pill.createdAt));
+		return rows.map(toDomainSummary);
+	},
+
+	async listSummaryPaginated(
+		userId: string,
+		limit: number,
+		offset: number
+	): Promise<PillSummary[]> {
+		const rows = await db
+			.select(summaryColumns)
+			.from(pill)
+			.leftJoin(category, eq(pill.categoryId, category.id))
+			.where(eq(pill.userId, userId))
+			.orderBy(desc(pill.createdAt))
+			.limit(limit)
+			.offset(offset);
+		return rows.map(toDomainSummary);
+	},
+
+	async searchSummary(
+		userId: string,
+		filters: PillSearchFilters,
+		limit: number,
+		offset: number
+	): Promise<PillSummary[]> {
+		const conditions = [eq(pill.userId, userId)];
+
+		if (filters.query) {
+			const term = `%${filters.query}%`;
+			conditions.push(
+				or(ilike(pill.title, term), ilike(pill.excerpt, term), ilike(pill.body, term))!
+			);
+		}
+		if (filters.categoryId !== undefined && filters.categoryId !== null) {
+			conditions.push(eq(pill.categoryId, filters.categoryId));
+		}
+		if (filters.period && filters.period !== 'any') {
+			conditions.push(gte(pill.createdAt, periodCutoff(filters.period)));
+		}
+
+		const rows = await db
+			.select(summaryColumns)
+			.from(pill)
+			.leftJoin(category, eq(pill.categoryId, category.id))
+			.where(and(...conditions))
+			.orderBy(desc(pill.createdAt))
+			.limit(limit)
+			.offset(offset);
+		return rows.map(toDomainSummary);
+	},
+
+	async countByFilters(userId: string, filters: PillSearchFilters): Promise<number> {
+		const conditions = [eq(pill.userId, userId)];
+
+		if (filters.query) {
+			const term = `%${filters.query}%`;
+			conditions.push(
+				or(ilike(pill.title, term), ilike(pill.excerpt, term), ilike(pill.body, term))!
+			);
+		}
+		if (filters.categoryId !== undefined && filters.categoryId !== null) {
+			conditions.push(eq(pill.categoryId, filters.categoryId));
+		}
+		if (filters.period && filters.period !== 'any') {
+			conditions.push(gte(pill.createdAt, periodCutoff(filters.period)));
+		}
+
+		const [row] = await db
+			.select({ value: count() })
+			.from(pill)
+			.where(and(...conditions));
+		return row?.value ?? 0;
 	},
 
 	async nextNumber(userId: string): Promise<number> {

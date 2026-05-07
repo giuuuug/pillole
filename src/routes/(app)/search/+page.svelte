@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Icon from '$lib/components/Icon.svelte';
 	import GoUp from '$lib/components/GoUp.svelte';
 	import { formatPillNumber } from '$lib/domain/pill';
+	import type { PillSummary } from '$lib/domain/pill';
 
 	let { data } = $props();
 
@@ -11,29 +11,43 @@
 	let activeCat = $state<string | null>(null);
 	let period = $state<Period>('any');
 
-	let allCats = $derived([
-		...new Set(data.pills.map((p) => p.category?.name).filter(Boolean) as string[])
-	]);
+	let results = $state<PillSummary[]>([]);
+	let total = $state(0);
+	let searching = $state(false);
+	let debounceTimer: ReturnType<typeof setTimeout>;
 
-	let results = $derived.by(() => {
-		let r = data.pills;
-		if (query) {
-			const q = query.toLowerCase();
-			r = r.filter(
-				(p) =>
-					p.title.toLowerCase().includes(q) ||
-					p.excerpt.toLowerCase().includes(q) ||
-					p.body.toLowerCase().includes(q)
-			);
+	async function doSearch() {
+		const params = new URLSearchParams();
+		if (query) params.set('q', query);
+		if (activeCat) {
+			const cat = data.categories.find((c) => c.name === activeCat);
+			if (cat) params.set('category', cat.id);
 		}
-		if (activeCat) r = r.filter((p) => p.category?.name === activeCat);
-		if (period !== 'any') {
-			const cutoff = new Date();
-			if (period === 'week') cutoff.setDate(cutoff.getDate() - 7);
-			if (period === 'month') cutoff.setMonth(cutoff.getMonth() - 1);
-			r = r.filter((p) => new Date(p.createdAt) >= cutoff);
+		if (period !== 'any') params.set('period', period);
+
+		searching = true;
+		try {
+			const res = await fetch(`/api/pills/search?${params}`);
+			if (!res.ok) return;
+			const data = await res.json();
+			results = data.items;
+			total = data.total;
+		} finally {
+			searching = false;
 		}
-		return r;
+	}
+
+	$effect(() => {
+		// Track reactive dependencies.
+		const _q = query;
+		const _c = activeCat;
+		const _p = period;
+
+		clearTimeout(debounceTimer);
+		// Immediate search on filter/period change; debounce on text input.
+		const delay = _q !== query ? 0 : 300;
+		debounceTimer = setTimeout(doSearch, delay);
+		return () => clearTimeout(debounceTimer);
 	});
 
 	let hasFilters = $derived(query.length > 0 || activeCat !== null || period !== 'any');
@@ -58,14 +72,14 @@
 		<div class="filter-row">
 			<div class="filter-label eyebrow-strong">Categoria</div>
 			<div class="chips">
-				{#each allCats as c (c)}
+				{#each data.categories as c (c.id)}
 					<button
 						type="button"
 						class="chip"
-						aria-pressed={activeCat === c}
-						onclick={() => (activeCat = activeCat === c ? null : c)}
+						aria-pressed={activeCat === c.name}
+						onclick={() => (activeCat = activeCat === c.name ? null : c.name)}
 					>
-						{c}
+						{c.name}
 					</button>
 				{/each}
 			</div>
@@ -91,14 +105,22 @@
 	<div class="divider"></div>
 
 	<div class="result-bar">
-		<div class="eyebrow-strong">{results.length} risultat{results.length === 1 ? 'o' : 'i'}</div>
+		<div class="eyebrow-strong">
+			{#if searching}
+				Ricerca…
+			{:else if hasFilters}
+				{total} risultat{total === 1 ? 'o' : 'i'}
+			{:else}
+				&nbsp;
+			{/if}
+		</div>
 		{#if hasFilters}
 			<button type="button" class="reset" onclick={reset}>Azzera</button>
 		{/if}
 	</div>
 
 	<div class="body">
-		{#if results.length === 0}
+		{#if hasFilters && !searching && results.length === 0}
 			<div class="empty serif-italic">Niente da cercare.</div>
 		{:else}
 			{#each results as p, i (p.id)}

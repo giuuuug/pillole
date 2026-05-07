@@ -37,6 +37,14 @@ export type PillSearchFilters = {
 	period?: 'any' | 'week' | 'month';
 };
 
+export type PillSummary = Omit<PillWithCategory, 'body'>;
+
+export type PillPage = {
+	items: PillSummary[];
+	total: number;
+	hasMore: boolean;
+};
+
 export function formatPillNumber(n: number): string {
 	return String(n).padStart(3, '0');
 }

@@ -4,6 +4,7 @@
 	import PillListItem from '$lib/components/PillListItem.svelte';
 	import { formatDateShort } from '$lib/utils/format';
 	import { formatPillNumber } from '$lib/domain/pill';
+	import type { PillSummary } from '$lib/domain/pill';
 
 	let { data } = $props();
 
@@ -11,14 +12,30 @@
 	let view = $state<View>('list');
 	let filter = $state('Tutte');
 
-	let cats = $derived(['Tutte', ...new Set(data.pills.map((p) => p.category?.name ?? '—'))]);
+	// Extra pages fetched client-side beyond the first server-rendered page.
+	let extraPages = $state<PillSummary[][]>([]);
+	let dynamicHasMore = $state<boolean | null>(null);
+	let loadingMore = $state(false);
+
+	// Grouped view state
+	let groupedPills = $state<PillSummary[]>([]);
+	let groupedLoaded = $state(false);
+	let loadingGrouped = $state(false);
+
+	// Merge server pills with any additionally fetched pages.
+	let pills = $derived([...data.pills, ...extraPages.flat()]);
+	let hasMore = $derived(dynamicHasMore ?? data.hasMore);
+	let currentPage = $derived(1 + extraPages.length);
+
+	let cats = $derived(['Tutte', ...new Set(pills.map((p) => p.category?.name ?? '—'))]);
 	let filtered = $derived(
-		filter === 'Tutte' ? data.pills : data.pills.filter((p) => (p.category?.name ?? '—') === filter)
+		filter === 'Tutte' ? pills : pills.filter((p) => (p.category?.name ?? '—') === filter)
 	);
 
 	let grouped = $derived.by(() => {
-		const groups = new Map<string, typeof data.pills>();
-		for (const p of data.pills) {
+		const source = groupedLoaded ? groupedPills : pills;
+		const groups = new Map<string, PillSummary[]>();
+		for (const p of source) {
 			const key = p.category?.name ?? '—';
 			const arr = groups.get(key) ?? [];
 			arr.push(p);
@@ -26,6 +43,59 @@
 		}
 		return [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
 	});
+
+	// Reset extra pages when the server provides fresh base data.
+	$effect(() => {
+		void data;
+		extraPages = [];
+		dynamicHasMore = null;
+		groupedLoaded = false;
+		groupedPills = [];
+	});
+
+	async function loadMore() {
+		if (loadingMore || !hasMore) return;
+		loadingMore = true;
+		try {
+			const res = await fetch(`/api/pills?page=${currentPage + 1}`);
+			if (!res.ok) return;
+			const next = await res.json();
+			extraPages = [...extraPages, next.items];
+			dynamicHasMore = next.hasMore;
+		} finally {
+			loadingMore = false;
+		}
+	}
+
+	async function switchToGrouped() {
+		view = 'grouped';
+		if (groupedLoaded || loadingGrouped) return;
+		// If the full list is already in memory, no need to fetch.
+		if (!data.hasMore) {
+			groupedPills = pills;
+			groupedLoaded = true;
+			return;
+		}
+		loadingGrouped = true;
+		try {
+			// Load all pages to build the full grouped view.
+			let page = 1;
+			let more = true;
+			const all: PillSummary[] = [];
+			while (more) {
+				const res = await fetch(`/api/pills?page=${page}&pageSize=100`);
+				if (!res.ok) break;
+				const batch = await res.json();
+				all.push(...batch.items);
+				more = batch.hasMore;
+				page += 1;
+			}
+			groupedPills = all;
+			groupedLoaded = true;
+		} finally {
+			loadingGrouped = false;
+		}
+	}
 </script>
 
 <section class="library">
@@ -34,7 +104,7 @@
 	</div>
 
 	<div class="spaced-row">
-		<p class="meta">{data.pills.length} pillole · {Math.max(0, cats.length - 1)} categorie</p>
+		<p class="meta">{data.total} pillole · {Math.max(0, cats.length - 1)} categorie</p>
 	</div>
 
 	<div class="view-toggle">
@@ -43,7 +113,7 @@
 				type="button"
 				class="toggle-btn"
 				class:active={view === v.id}
-				onclick={() => (view = v.id)}
+				onclick={() => (v.id === 'grouped' ? switchToGrouped() : (view = 'list'))}
 			>
 				{v.l}
 			</button>
@@ -68,29 +138,45 @@
 				{#each filtered as p, i (p.id)}
 					<PillListItem pill={p} first={i === 0} />
 				{/each}
+				{#if hasMore}
+					<div class="load-more">
+						<button
+							type="button"
+							class="btn-load-more"
+							onclick={loadMore}
+							disabled={loadingMore}
+						>
+							{loadingMore ? 'Caricamento…' : 'Carica altre'}
+						</button>
+					</div>
+				{/if}
 			{/if}
 		{:else}
-			<div class="groups">
-				{#each grouped as [cat, items] (cat)}
-					{@const color = items[0].category?.color ?? '#888'}
-					<div class="group">
-						<div class="group-head">
-							<Capsule {color} size={20} />
-							<div class="group-title serif">{cat}</div>
-							<div class="group-count">{items.length}</div>
+			{#if loadingGrouped}
+				<p class="loading serif-italic">Caricamento…</p>
+			{:else}
+				<div class="groups">
+					{#each grouped as [cat, items] (cat)}
+						{@const color = items[0].category?.color ?? '#888'}
+						<div class="group">
+							<div class="group-head">
+								<Capsule {color} size={20} />
+								<div class="group-title serif">{cat}</div>
+								<div class="group-count">{items.length}</div>
+							</div>
+							<div class="group-grid">
+								{#each items as p (p.id)}
+									<a href="/pills/{p.id}" class="grid-card card-paper">
+										<div class="grid-num serif">№ {formatPillNumber(p.number)}</div>
+										<div class="grid-title serif">{p.title}</div>
+										<div class="grid-date">{formatDateShort(p.createdAt)}</div>
+									</a>
+								{/each}
+							</div>
 						</div>
-						<div class="group-grid">
-							{#each items as p (p.id)}
-								<a href="/pills/{p.id}" class="grid-card card-paper">
-									<div class="grid-num serif">№ {formatPillNumber(p.number)}</div>
-									<div class="grid-title serif">{p.title}</div>
-									<div class="grid-date">{formatDateShort(p.createdAt)}</div>
-								</a>
-							{/each}
-						</div>
-					</div>
-				{/each}
-			</div>
+					{/each}
+				</div>
+			{/if}
 		{/if}
 	</div>
 </section>
@@ -173,6 +259,36 @@
 		padding: 40px 0;
 		text-align: center;
 		color: var(--color-ink-muted);
+	}
+
+	.loading {
+		padding: 40px 0;
+		text-align: center;
+		color: var(--color-ink-muted);
+		font-size: 16px;
+	}
+
+	.load-more {
+		display: flex;
+		justify-content: center;
+		padding: 28px 0 8px;
+	}
+
+	.btn-load-more {
+		font-size: 13px;
+		padding: 10px 24px;
+		border-radius: 9999px;
+		border: 1px solid var(--color-ink-border);
+		background: transparent;
+		color: var(--color-ink);
+		cursor: pointer;
+		letter-spacing: 0.03em;
+		font-weight: 500;
+	}
+
+	.btn-load-more:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.groups {

@@ -2,9 +2,6 @@ import type { PageServerLoad } from './$types';
 import { pillService } from '$lib/server/services/pill-service';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const [daily, total] = await Promise.all([
-		pillService.findDaily(locals.user!.id),
-		pillService.count(locals.user!.id)
-	]);
-	return { daily, totalCount: total };
+	const pills = await pillService.listAllSummary(locals.user!.id);
+	return { pills };
 };

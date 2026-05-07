@@ -33,16 +33,31 @@ sw.addEventListener('fetch', (event) => {
 	const url = new URL(req.url);
 	if (url.origin !== sw.location.origin) return;
 
-	// Never cache API/auth/dynamic data — let it hit the network.
-	if (
-		url.pathname.startsWith('/api/') ||
-		url.pathname.startsWith('/auth/') ||
-		url.pathname.startsWith('/pills/') ||
-		url.pathname === '/' ||
-		url.pathname.startsWith('/library') ||
-		url.pathname.startsWith('/search') ||
-		url.pathname.startsWith('/profile')
-	) {
+	// Never cache auth or API data endpoints.
+	if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+
+	// Stale-while-revalidate for HTML page navigations.
+	// The browser sets Accept: text/html on top-level navigation requests.
+	// SvelteKit's internal __data.json fetches do not, so they pass through.
+	const isNavigation =
+		req.headers.get('accept')?.includes('text/html') ?? false;
+
+	if (isNavigation) {
+		event.respondWith(
+			(async () => {
+				const cache = await caches.open(CACHE);
+				const cached = await cache.match(req);
+				// Fetch in background and refresh cache regardless.
+				const networkPromise = fetch(req)
+					.then((res) => {
+						if (res.ok) cache.put(req, res.clone());
+						return res;
+					})
+					.catch(() => null);
+				// Serve stale immediately if available; otherwise wait for network.
+				return cached ?? (await networkPromise) ?? new Response('offline', { status: 503 });
+			})()
+		);
 		return;
 	}
 

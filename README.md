@@ -22,6 +22,17 @@
 
 Una enciclopedia personale di concetti brevi: scrivi una pillola in pochi secondi e ritrovala al volo.
 
+
+
+<details open>
+<summary><b>📋 Indice</b></summary>
+
+- [Introduzione al progetto](#introduzione-al-progetto)
+- [Setup](#setup)
+- [Come contribuire](#come-contribuire)
+
+</details>
+
 ## Feature
 
 - Editor di testo che accetta il latex per scrivere pillole in modo fluido
@@ -30,17 +41,11 @@ Una enciclopedia personale di concetti brevi: scrivi una pillola in pochi second
 - Ricerca rapida e navigazione snella
 - UI minimale e focalizzata sulla lettura
 
-## Indice
-
-1. Introduzione al progetto
-2. Come setappare
-3. Come contribuire
-
 ## 1. Introduzione al progetto
 
 Pillole nasce dall'esigenza di memorizzare piccoli concetti in "pillole": frammenti sintetici di conoscenza, pensati per una consultazione veloce e ordinata. L'idea e' costruire una enciclopedia personale, dove ogni pillola contiene titolo, contenuto, categoria e fonte.
 
-## 2. Come setappare
+## 2. Setup
 
 ### Prerequisiti
 

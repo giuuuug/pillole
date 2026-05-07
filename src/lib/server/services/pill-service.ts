@@ -1,6 +1,15 @@
 import { pillRepository } from '$lib/server/repositories/pill-repository';
 import { categoryRepository } from '$lib/server/repositories/category-repository';
-import { buildExcerpt, type Pill, type PillInput, type PillWithCategory } from '$lib/domain/pill';
+import {
+	buildExcerpt,
+	type Pill,
+	type PillInput,
+	type PillPage,
+	type PillSearchFilters,
+	type PillSummary,
+	type PillUpdate,
+	type PillWithCategory
+} from '$lib/domain/pill';
 
 export class PillServiceError extends Error {
 	constructor(
@@ -10,6 +19,8 @@ export class PillServiceError extends Error {
 		super(message);
 	}
 }
+
+const PAGE_SIZE = 30;
 
 function isSafeUrl(url: string): boolean {
 	try {
@@ -33,9 +44,59 @@ function validate(input: PillInput) {
 	return { title, body };
 }
 
+// Deterministic daily offset: same algorithm as pickDailyPill but resolved server-side.
+function dailyOffset(total: number, date: Date): number {
+	if (total === 0) return 0;
+	const seed = date.getFullYear() * 1000 + (date.getMonth() + 1) * 50 + date.getDate();
+	return seed % total;
+}
+
 export const pillService = {
 	async list(userId: string): Promise<PillWithCategory[]> {
 		return pillRepository.listByUser(userId);
+	},
+
+	async listAllSummary(userId: string): Promise<PillSummary[]> {
+		return pillRepository.listAllSummary(userId);
+	},
+
+	async count(userId: string): Promise<number> {
+		return pillRepository.count(userId);
+	},
+
+	async findDaily(userId: string, date = new Date()): Promise<PillWithCategory | null> {
+		const total = await pillRepository.count(userId);
+		if (total === 0) return null;
+		const offset = dailyOffset(total, date);
+		return pillRepository.findByOffset(userId, offset);
+	},
+
+	async listPaginated(
+		userId: string,
+		page: number,
+		pageSize: number = PAGE_SIZE
+	): Promise<PillPage> {
+		const offset = (page - 1) * pageSize;
+		const [items, total] = await Promise.all([
+			pillRepository.listSummaryPaginated(userId, pageSize + 1, offset),
+			pillRepository.count(userId)
+		]);
+		const hasMore = items.length > pageSize;
+		return { items: hasMore ? items.slice(0, pageSize) : items, total, hasMore };
+	},
+
+	async searchPaginated(
+		userId: string,
+		filters: PillSearchFilters,
+		page: number,
+		pageSize: number = PAGE_SIZE
+	): Promise<{ items: PillSummary[]; total: number }> {
+		const offset = (page - 1) * pageSize;
+		const [items, total] = await Promise.all([
+			pillRepository.searchSummary(userId, filters, pageSize, offset),
+			pillRepository.countByFilters(userId, filters)
+		]);
+		return { items, total };
 	},
 
 	async findById(userId: string, id: string): Promise<PillWithCategory> {
@@ -69,7 +130,7 @@ export const pillService = {
 	},
 
 	async update(userId: string, id: string, patch: Partial<PillInput>): Promise<Pill> {
-		const set: Partial<PillInput> = {};
+		const set: Partial<PillUpdate> = {};
 		if (patch.title !== undefined) set.title = patch.title.trim();
 		if (patch.body !== undefined) {
 			set.body = patch.body.trim();
@@ -86,7 +147,8 @@ export const pillService = {
 		if (patch.source !== undefined) set.source = patch.source?.trim() || null;
 		if (patch.sourceUrl !== undefined) {
 			const url = patch.sourceUrl?.trim() || null;
-			if (url && !isSafeUrl(url)) throw new PillServiceError('INVALID', 'URL della fonte non valido.');
+			if (url && !isSafeUrl(url))
+				throw new PillServiceError('INVALID', 'URL della fonte non valido.');
 			set.sourceUrl = url;
 		}
 		if (patch.favorite !== undefined) set.favorite = patch.favorite;

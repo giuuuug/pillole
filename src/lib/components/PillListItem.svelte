@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { PillWithCategory } from '$lib/domain/pill';
+	import type { PillSummary } from '$lib/domain/pill';
 	import { formatPillNumber } from '$lib/domain/pill';
 	import { formatDateShort } from '$lib/utils/format';
 
 	type Props = {
-		pill: PillWithCategory;
+		pill: PillSummary;
 		first?: boolean;
 	};
 
