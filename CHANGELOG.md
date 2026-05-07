@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/giuuuug/pillole/compare/v1.1.0...v1.1.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* service worker ([5e4933c](https://github.com/giuuuug/pillole/commit/5e4933cb30c4250417f7aaf954de4b1763824aed))
+
 # [1.1.0](https://github.com/giuuuug/pillole/compare/v1.0.3...v1.1.0) (2026-05-07)
 
 
