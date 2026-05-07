@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/giuuuug/pillole/compare/v1.0.3...v1.1.0) (2026-05-07)
+
+
+### Features
+
+* self-host fonts, paginate data loading, server-side search ([e6cf98b](https://github.com/giuuuug/pillole/commit/e6cf98ba503eaf6cd071c9bb8ed56b1503ae05f3))
+
 ## [1.0.3](https://github.com/giuuuug/pillole/compare/v1.0.2...v1.0.3) (2026-05-06)
 
 
